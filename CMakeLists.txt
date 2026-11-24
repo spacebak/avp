@@ -24,6 +24,8 @@ IF(AVP_BUILD_TYPE STREQUAL "WEB")
     SET(AVP_WEB "YES")
 ENDIF(AVP_BUILD_TYPE STREQUAL "WEB")
 
+SET(AVP_WEB_MULTIPLAYER_URL "" CACHE STRING "WebSocket URL override for the AVP multiplayer relay")
+
 PROJECT(avp)
 
 IF(AVP_WEB)
@@ -157,7 +159,11 @@ LIST(APPEND source src/bink.c)
 LIST(APPEND source src/stubs.c)
 LIST(APPEND source src/version.c)
 LIST(APPEND source src/mathline.c)
-LIST(APPEND source src/net.c)
+IF(AVP_WEB)
+    LIST(APPEND source src/net_websocket.c)
+ELSE()
+    LIST(APPEND source src/net.c)
+ENDIF()
 LIST(APPEND source src/frustum.c)
 LIST(APPEND source src/kshape.c)
 LIST(APPEND source src/map.c)
@@ -415,8 +421,11 @@ INCLUDE_DIRECTORIES(src/include)
 
 IF(AVP_WEB)
     ADD_DEFINITIONS(-DUSE_OPENGL_ES=1)
+    ADD_DEFINITIONS(-DAVP_WEB_MULTIPLAYER_URL=\"${AVP_WEB_MULTIPLAYER_URL}\")
+    SET(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} --js-library \"${CMAKE_CURRENT_SOURCE_DIR}/web-multiplayer/client.js\"")
 
     ADD_EXECUTABLE(avp ${source})
+    SET_PROPERTY(TARGET avp APPEND PROPERTY LINK_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/web-multiplayer/client.js")
 ENDIF(AVP_WEB)
 
 IF(NOT AVP_WEB)

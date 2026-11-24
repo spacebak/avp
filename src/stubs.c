@@ -109,7 +109,7 @@ void ReloadImageIntoD3DImmediateSurface(IMAGEHEADER* iheader)
 int NumberOfLandscapePolygons;
 int FMVParticleColour;
 int WireFrameMode;
-int WaterFallBase;
+/* Defined by the renderer. */
 
 void InitDrawTest()
 {

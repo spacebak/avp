@@ -11,7 +11,7 @@
 /* cd_player.cpp */
 int CDPlayerVolume;
 
-#if SDL_MAJOR_VERSION < 2
+#if SDL_MAJOR_VERSION < 2 && !defined(__EMSCRIPTEN__)
 static int HaveCDROM = 0;
 static SDL_CD *cdrom = NULL;
 

@@ -3,7 +3,7 @@
 #include <string.h>
 #include <ctype.h>
 
-#include "SDL.h"
+#include "menu_surface.h"
 #include "oglfunc.h"
 
 #if !defined(_MSC_VER)
@@ -47,6 +47,7 @@
 
 #if EMSCRIPTEN
 #include <emscripten.h>
+#include <emscripten/html5.h>
 #endif
 
 #if defined(__IPHONEOS__) || defined(__ANDROID__)
@@ -57,12 +58,48 @@
 #define USE_OPENGL_ES 1
 #endif
 
-#warning WINDOW_SIZE_DEBUG is on in all builds
-#if 1 //!defined(NDEBUG)
+#if !defined(AVP_WEB_BUILTIN_SDL)
+#warning WINDOW_SIZE_DEBUG is enabled
 #define WINDOW_SIZE_DEBUG
 #endif
 
+#ifdef AVP_WEB_BUILTIN_SDL
+#define SDL_WINDOW_FULLSCREEN_DESKTOP SDL_WINDOW_FULLSCREEN
+#define SDL_GL_GetDrawableSize SDL_GetWindowSize
+static int web_mouse_locked(void) {
+	EmscriptenPointerlockChangeEvent state;
+	return emscripten_get_pointerlock_status(&state) == EMSCRIPTEN_RESULT_SUCCESS && state.isActive;
+}
+static int web_mouse_x, web_mouse_y;
+static EM_BOOL web_mouse_move(int type, const EmscriptenMouseEvent *event, void *context)
+{
+	if (web_mouse_locked() || EM_ASM_INT({ return !!Module['avpCursorLook']; })) {
+		web_mouse_x += event->movementX;
+		web_mouse_y += event->movementY;
+	}
+	return EM_FALSE;
+}
+#define SDL_GetRelativeMouseMode web_mouse_locked
+static void web_set_mouse_lock(int lock) {
+	if (lock)
+		emscripten_request_pointerlock("#canvas", EM_TRUE);
+	else
+		emscripten_exit_pointerlock();
+}
+#define SDL_SetRelativeMouseMode web_set_mouse_lock
+#endif
+
 static void main_loop(void);
+#ifdef __EMSCRIPTEN__
+static EM_BOOL web_visibility_changed(int type, const EmscriptenVisibilityChangeEvent *event, void *context)
+{
+	/* Browsers suspend requestAnimationFrame in hidden tabs. A host must still
+	   answer join requests and process remote players while another tab plays. */
+	emscripten_cancel_main_loop();
+	emscripten_set_main_loop(main_loop, event->hidden ? 10 : 0, 0);
+	return EM_FALSE;
+}
+#endif
 
 void RE_ENTRANT_QUEUE_WinProc_AddMessage_WM_CHAR(char Ch);
 void RE_ENTRANT_QUEUE_WinProc_AddMessage_WM_KEYDOWN(int wParam);
@@ -251,7 +288,7 @@ unsigned char *GetScreenShot24(int *width, int *height)
 		unsigned short int *ptrs;
 		int x, y;
 	
-		if (SDL_MUSTLOCK(surface)) {
+		if (AVP_MENU_MUSTLOCK(surface)) {
 			if (SDL_LockSurface(surface) < 0) {
 				free(buf);
 				return NULL; /* ... */
@@ -277,7 +314,7 @@ unsigned char *GetScreenShot24(int *width, int *height)
 		*width = surface->w;
 		*height = surface->h;
 
-		if (SDL_MUSTLOCK(surface)) {
+		if (AVP_MENU_MUSTLOCK(surface)) {
 			SDL_UnlockSurface(surface);
 		}
 	}
@@ -441,6 +478,10 @@ int InitSDL()
 #if EMSCRIPTEN
 	printf("Setting main loop...\n");
 	emscripten_set_main_loop(main_loop, 0, 0);
+	emscripten_set_visibilitychange_callback(NULL, 0, web_visibility_changed);
+#ifdef AVP_WEB_BUILTIN_SDL
+	emscripten_set_mousemove_callback("#canvas", NULL, 0, web_mouse_move);
+#endif
 #endif
 
 	if (SDL_Init(SDL_INIT_VIDEO) < 0) {
@@ -450,7 +491,9 @@ int InitSDL()
 
 	atexit(SDL_Quit);
 
+#ifndef AVP_WEB_BUILTIN_SDL
 	SDL_AddEventWatch(SDLEventFilter, NULL);
+#endif
 
 #if 0
 	SDL_Rect **SDL_AvailableVideoModes;
@@ -551,7 +594,21 @@ int InitSDL()
     amask = 0x00000000;
 #endif
 
+#ifdef AVP_WEB_BUILTIN_SDL
+	surface = calloc(1, sizeof(*surface));
+	if (surface) {
+		surface->w = 640;
+		surface->h = 480;
+		surface->pitch = surface->w * sizeof(uint16_t);
+		surface->pixels = calloc(surface->h, surface->pitch);
+		if (!surface->pixels) {
+			free(surface);
+			surface = NULL;
+		}
+	}
+#else
 	surface = SDL_CreateRGBSurface(0, 640, 480, 16, rmask, gmask, bmask, amask);
+#endif
 	if (surface == NULL) {
 		return -1;
 	}
@@ -661,7 +718,14 @@ static void SetWindowSize(int PhysicalWidth, int PhysicalHeight, int VirtualWidt
 	ScreenDescriptorBlock.SDB_ClipDown  = VirtualHeight;
 
 	if (window != NULL) {
+#ifdef AVP_WEB_BUILTIN_SDL
+		int w, h;
+		SDL_GetWindowSize(window, &w, &h);
+		if (w != PhysicalWidth || h != PhysicalHeight)
+			emscripten_set_canvas_element_size("#canvas", PhysicalWidth, PhysicalHeight);
+#else
 		SDL_SetWindowSize(window, PhysicalWidth, PhysicalHeight);
+#endif
 
 		SDL_GL_GetDrawableSize(window, &DrawableWidth, &DrawableHeight);
 		pglViewport(0, 0, DrawableWidth, DrawableHeight);
@@ -689,6 +753,7 @@ static int SetSoftVideoMode(int Width, int Height, int Depth)
 }
 
 /* ** */
+#ifndef AVP_WEB_BUILTIN_SDL
 static void load_opengl_library(const char *lib)
 {
 	char tmppath[PATH_MAX];
@@ -740,6 +805,8 @@ static int SDLCALL SDLEventFilter(void* userData, SDL_Event* event) {
 	return 1;
 }
 
+#endif
+
 static int InitSDLVideo(void) {
 	return 0;
 }
@@ -769,6 +836,14 @@ static int SetOGLVideoMode(int Width, int Height)
 
 		load_ogl_functions(0);
 
+#ifdef AVP_WEB_BUILTIN_SDL
+		window = (SDL_Window *)SDL_SetVideoMode(WindowWidth, WindowHeight, 0, SDL_OPENGL);
+		if (!window) {
+			fprintf(stderr, "WebGL initialization failed\n");
+			exit(EXIT_FAILURE);
+		}
+		SDL_StartTextInput();
+#else
 		flags = SDL_WINDOW_OPENGL|SDL_WINDOW_ALLOW_HIGHDPI;
 
 #if defined(FIXED_WINDOW_SIZE)
@@ -834,6 +909,7 @@ static int SetOGLVideoMode(int Width, int Height)
 
 		// These should be configurable video options.
 		SDL_GL_SetSwapInterval(1);
+#endif
 
 		load_ogl_functions(1);
 
@@ -860,12 +936,13 @@ static int SetOGLVideoMode(int Width, int Height)
 		// this should be deleted and rebuilt when the screen size changes
 		GLint maxRenderbufferSize;
 		GLint maxTextureSize;
-		GLint maxViewportDims;
+		GLint viewportLimits[2], maxViewportDims;
 		GLint maxRenderSize;
 
 		pglGetIntegerv(GL_MAX_RENDERBUFFER_SIZE, &maxRenderbufferSize);
 		pglGetIntegerv(GL_MAX_TEXTURE_SIZE, &maxTextureSize);
-		pglGetIntegerv(GL_MAX_VIEWPORT_DIMS, &maxViewportDims);
+		pglGetIntegerv(GL_MAX_VIEWPORT_DIMS, viewportLimits);
+		maxViewportDims = min(viewportLimits[0], viewportLimits[1]);
 		printf("DEBUG:%d,%d,%d\n", maxRenderbufferSize, maxTextureSize, maxViewportDims);
 
 		FramebufferTextureWidth = Width * 2;
@@ -981,7 +1058,12 @@ int ExitWindowsSystem()
 	load_ogl_functions(0);
 	
 	if (surface != NULL) {
+#ifdef AVP_WEB_BUILTIN_SDL
+		free(surface->pixels);
+		free(surface);
+#else
 		SDL_FreeSurface(surface);
+#endif
 	}
 	surface = NULL;
 
@@ -991,7 +1073,9 @@ int ExitWindowsSystem()
 	context = NULL;
 
 	if (window != NULL) {
+#ifndef AVP_WEB_BUILTIN_SDL
 		SDL_DestroyWindow(window);
+#endif
 	}
 	window = NULL;
 
@@ -1283,13 +1367,19 @@ static void handle_keypress(int key, int unicode, int press)
 void CheckForWindowsMessages()
 {
 	SDL_Event event;
-	int x, y, buttons, wantmouse;
+	int x = 0, y = 0, buttons, wantmouse;
 	
 	GotAnyKey = 0;
 	DebouncedGotAnyKey = 0;
 	memset(DebouncedKeyboardInput, 0, sizeof(DebouncedKeyboardInput));
 	
 	wantmouse =	(SDL_GetRelativeMouseMode() == SDL_TRUE);
+#ifdef AVP_WEB_BUILTIN_SDL
+	wantmouse |= EM_ASM_INT({ return !!Module['avpCursorLook']; });
+	x = web_mouse_x;
+	y = web_mouse_y;
+	web_mouse_x = web_mouse_y = 0;
+#endif
 
 	// "keyboard" events that don't have an up event
 	KeyboardInput[KEY_MOUSEWHEELUP] = 0;
@@ -1365,7 +1455,11 @@ void CheckForWindowsMessages()
 		}
 	}
 	
+#ifdef AVP_WEB_BUILTIN_SDL
+	buttons = SDL_GetMouseState(NULL, NULL);
+#else
 	buttons = SDL_GetRelativeMouseState(&x, &y);
+#endif
 	
 	if (wantmouse) {
 		if (buttons & SDL_BUTTON(1))
@@ -1451,7 +1545,9 @@ void CheckForWindowsMessages()
 
 	// a second reset of relative mouse state because
 	// enabling relative mouse mode moves the mouse
+#ifndef AVP_WEB_BUILTIN_SDL
 	SDL_GetRelativeMouseState(NULL, NULL);
+#endif
 
 	if (GotPrintScn) {
 		GotPrintScn = 0;

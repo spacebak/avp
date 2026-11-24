@@ -31,6 +31,7 @@
 #include "avp_menugfx.hpp"
 #include "avp_intro.h"
 #include "fmv.h"
+#include "bink.h"
 
 /* used to get file time */
 #include <sys/types.h>
@@ -182,6 +183,16 @@ extern SCREENDESCRIPTORBLOCK ScreenDescriptorBlock;
 extern int TimeScale;
 
 static AVP_MENUS AvPMenus;
+static void StartMultiplayerLevel(void)
+{
+	AvPMenus.MenusState = MENUSSTATE_STARTGAME;
+	if (netGameData.gameType == NGT_Coop)
+		SetLevelToLoadForCooperative(netGameData.levelNumber);
+	else
+		SetLevelToLoadForMultiplayer(netGameData.levelNumber);
+	SetBriefingTextForMultiplayer();
+}
+
 extern AVPMENU  AvPMenusData[];
 
 extern int AlienEpisodeToPlay;
@@ -686,7 +697,11 @@ extern void AvP_UpdateMenus(void)
 	    AvPMenus.CurrentMenu == AVPMENU_MULTIPLAYER_CONFIG_JOIN)
 	{
 		MinimalNetCollectMessages();
-		if(AvP.Network==I_Host)
+		if(AvP.Network==I_Host
+#ifdef __EMSCRIPTEN__
+			|| *NetWebStatus()
+#endif
+		)
 		{	/*
 			We have become host while in the process of joining.
 			This is bad.
@@ -779,6 +794,12 @@ extern void AvP_UpdateMenus(void)
 			}	
 		}
 
+#ifdef __EMSCRIPTEN__
+		if (retval == AVPMENU_MULTIPLAYERSTARTGAME) {
+			StartMultiplayerLevel();
+			return;
+		}
+#endif
 		if(retval==AVPMENU_MULTIPLAYER_CONFIG_JOIN)
 		{
 			//successfully joined
@@ -921,6 +942,13 @@ extern void AvP_UpdateMenus(void)
 			break;
 		}
 	}
+#ifdef __EMSCRIPTEN__
+	if (AvPMenus.CurrentMenu == AVPMENU_MULTIPLAYER || AvPMenus.CurrentMenu == AVPMENU_MULTIPLAYERSELECTSESSION ||
+		AvPMenus.CurrentMenu == AVPMENU_MULTIPLAYER_CONFIG) {
+		char *message = NetWebStatus();
+		if (*message) RenderSmallMenuText(message, MENU_CENTREX, MENU_CENTREY + 100, ONE_FIXED, AVPMENUFORMAT_CENTREJUSTIFIED);
+	}
+#endif
 	ActUponUsersInput();
 
 }
@@ -928,6 +956,11 @@ extern void AvP_UpdateMenus(void)
 static void SetupNewMenu(enum AVPMENU_ID menuID)
 {
 	enum AVPMENU_ID previousMenuID = AvPMenus.CurrentMenu;
+#ifdef __EMSCRIPTEN__
+	if (previousMenuID == AVPMENU_MULTIPLAYERSELECTSESSION &&
+		menuID != previousMenuID && menuID != AVPMENU_MULTIPLAYER_JOINING)
+		DirectPlay_Disconnect();
+#endif
 	AvPMenus.CurrentMenu = menuID;
 
 	/* set pointer to the start of the menu's element data */
@@ -1039,7 +1072,9 @@ static void SetupNewMenu(enum AVPMENU_ID menuID)
 			{
 				//save ip address (if it has been set)
 				extern char IPAddressString[]; 
+#ifndef __EMSCRIPTEN__
 				SaveIPAddress(IP_Address_Name,IPAddressString);
+#endif
 				DirectPlay_JoinGame();
 			}
 			MakeSelectSessionMenu();
@@ -1079,8 +1114,15 @@ static void SetupNewMenu(enum AVPMENU_ID menuID)
 				return;
 			}
 			
+#ifdef __EMSCRIPTEN__
+			netGameData.connectionType = CONN_TCPIP;
+			AvPMenusData[AVPMENU_MULTIPLAYER].ParentMenu = AVPMENU_MAIN;
+			SetupNewMenu(AVPMENU_MULTIPLAYER);
+			return;
+#else
 			DirectPlay_EnumConnections();
 			MakeConnectionSelectMenu();
+#endif
 			break;
 		}
 
@@ -1138,6 +1180,10 @@ static void SetupNewMenu(enum AVPMENU_ID menuID)
 
 		case AVPMENU_MULTIPLAYERJOINGAME:
 		{
+#ifdef __EMSCRIPTEN__
+			SetupNewMenu(AVPMENU_MULTIPLAYERSELECTSESSION);
+			return;
+#endif
 			extern char IPAddressString[]; 
 			extern char CommandLineIPAddressString[]; 
 			strcpy(IPAddressString,CommandLineIPAddressString);
@@ -3043,14 +3089,12 @@ static void InteractWithMenuElement(enum AVPMENU_ELEMENT_INTERACTION_ID interact
 
 				if (DirectPlay_HostGame(MP_PlayerName,MP_SessionName,MP_Species,netGameData.gameType,netGameData.levelNumber))
 				{
-					AvPMenus.MenusState = MENUSSTATE_STARTGAME;
-					if(netGameData.gameType==NGT_Coop)
-						SetLevelToLoadForCooperative(netGameData.levelNumber);
+#ifdef __EMSCRIPTEN__
+					if (!netGameData.skirmishMode)
+						SetupNewMenu(AVPMENU_MULTIPLAYER_JOINING);
 					else
-						SetLevelToLoadForMultiplayer(netGameData.levelNumber);
-	
-					
-					SetBriefingTextForMultiplayer();
+#endif
+						StartMultiplayerLevel();
 					
 				}
 			}
@@ -3060,14 +3104,8 @@ static void InteractWithMenuElement(enum AVPMENU_ELEMENT_INTERACTION_ID interact
 		{
 			if (interactionID == AVPMENU_ELEMENT_INTERACTION_SELECT)
 			{
-				AvPMenus.MenusState = MENUSSTATE_STARTGAME;
-				netGameData.myStartFlag = 1;	    
-//				netGameData.myGameState = NGS_Playing;
-				if(netGameData.gameType==NGT_Coop)
-					SetLevelToLoadForCooperative(netGameData.levelNumber);
-				else
-					SetLevelToLoadForMultiplayer(netGameData.levelNumber);
-				SetBriefingTextForMultiplayer();
+				netGameData.myStartFlag = 1;
+				StartMultiplayerLevel();
 			}
 			break;
 		}
@@ -3387,6 +3425,12 @@ static void InteractWithMenuElement(enum AVPMENU_ELEMENT_INTERACTION_ID interact
 int LengthOfMenuText(char *textPtr);
 int LengthOfSmallMenuText(char *textPtr);
 
+/* Match the small-font callback signature used by RenderMenuElement. */
+static int RenderLargeMenuText(char *text, int x, int y, int alpha, enum AVPMENUFORMAT_ID format)
+{
+	return RenderMenuText(text, x, y, alpha, format);
+}
+
 static void RenderMenuElement(AVPMENU_ELEMENT *elementPtr, int e, int y)
 {
 	int (*RenderText)(char *textPtr, int x, int y, int alpha, enum AVPMENUFORMAT_ID format);
@@ -3395,7 +3439,7 @@ static void RenderMenuElement(AVPMENU_ELEMENT *elementPtr, int e, int y)
 	
 	if (AvPMenus.FontToUse==AVPMENU_FONT_BIG)
 	{
-		RenderText = RenderMenuText;
+		RenderText = RenderLargeMenuText;
 		MenuTextLength = LengthOfMenuText;
 	}
 	else

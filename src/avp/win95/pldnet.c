@@ -5523,7 +5523,7 @@ static void ProcessNetMsg_GameDescription(NETMESSAGE_GAMEDESCRIPTION *messagePtr
 		
 			netGameData.playerData[i].playerId = messagePtr->players[i].playerId;
 			netGameData.playerData[i].characterType = (NETGAME_CHARACTERTYPE)messagePtr->players[i].characterType;
-			netGameData.playerData[i].characterSubType = (NETGAME_CHARACTERTYPE)messagePtr->players[i].characterSubType;
+			netGameData.playerData[i].characterSubType = (NETGAME_SPECIALISTCHARACTERTYPE)messagePtr->players[i].characterSubType;
 			netGameData.playerData[i].startFlag = messagePtr->players[i].startFlag;
 		}
 		netGameData.gameType = (NETGAME_TYPE)messagePtr->gameType;
@@ -5546,6 +5546,7 @@ static void ProcessNetMsg_GameDescription(NETMESSAGE_GAMEDESCRIPTION *messagePtr
 
 		netGameData.gameSpeed=messagePtr->gameSpeed;
 
+		netGameData.preDestroyLights=messagePtr->preDestroyLights;
 		netGameData.disableFriendlyFire=messagePtr->disableFriendlyFire;
 		netGameData.fallingDamage=messagePtr->fallingDamage;
 		netGameData.pistolInfiniteAmmo=messagePtr->pistolInfiniteAmmo;

@@ -91,9 +91,16 @@ static void dummyfunc()
 {
 }
 
+#ifdef __EMSCRIPTEN__
+#include <emscripten/html5_webgl.h>
+#define AVP_GL_PROC emscripten_webgl1_get_proc_address
+#else
+#define AVP_GL_PROC SDL_GL_GetProcAddress
+#endif
+
 #define LoadOGLProc_(type, func, name) {                    \
 	if (!mode) p##func = (type) dummyfunc; else			\
-	p##func = (type) SDL_GL_GetProcAddress(#name);			\
+	p##func = (type) AVP_GL_PROC(#name);			\
 	if (p##func == NULL) {						\
 		if (!ogl_missing_func) ogl_missing_func = #func;	\
 	}								\
@@ -164,7 +171,11 @@ void load_ogl_functions(int mode)
 	LoadOGLProc(avpPFNGLDELETETEXTURESPROC, glDeleteTextures);
 	LoadOGLProc(avpPFNGLDEPTHFUNCPROC, glDepthFunc);
 	LoadOGLProc(avpPFNGLDEPTHMASKPROC, glDepthMask);
+#if defined(USE_OPENGL_ES)
+	LoadOGLProc_(avpPFNGLDEPTHRANGEPROC, glDepthRange, glDepthRangef);
+#else
 	LoadOGLProc2(avpPFNGLDEPTHRANGEPROC, glDepthRange, glDepthRangef);
+#endif
 	LoadOGLProc(avpPFNGLDISABLEPROC, glDisable);
 	LoadOGLProc(avpPFNGLDRAWELEMENTSPROC, glDrawElements);
 	LoadOGLProc(avpPFNGLENABLEPROC, glEnable);

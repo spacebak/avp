@@ -4,7 +4,7 @@
 // Anything using these types is not alignment and endian clean.
 
 #if EMSCRIPTEN
-#include <emscripten.h>
+#include <emscripten/em_types.h>
 
 typedef emscripten_align1_short unaligned_s16;
 typedef emscripten_align1_int unaligned_s32;

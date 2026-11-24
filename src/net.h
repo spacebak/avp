@@ -1,6 +1,10 @@
 #ifndef AVP_NET_H
 #define AVP_NET_H
 
+#ifdef __EMSCRIPTEN__
+char *NetWebStatus(void);
+#endif
+
 BOOL DpExtInit(DWORD cGrntdBufs, DWORD cBytesPerBuf, BOOL bErrChcks);
 HRESULT DpExtRecv(int lpDP2A, void *lpidFrom, void *lpidTo, DWORD dwFlags, void *lplpData, LPDWORD lpdwDataSize);
 HRESULT DpExtSend(int lpDP2A, DPID idFrom, DPID idTo, DWORD dwFlags, void *lpData, DWORD dwDataSize);

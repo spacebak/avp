@@ -312,7 +312,7 @@ Defines for numbers of levels transferred to AvP_EnvInfo.h
 typedef struct
 {
 	char Name[40];
-	char levelIndex;//local level index
+	int levelIndex;//local level index
 //	GUID Guid;
 	int Guid;
 	

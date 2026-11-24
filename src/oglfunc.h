@@ -12,7 +12,7 @@
 
 // OpenGL compatibility
 typedef GLclampf GLclampd;
-typedef GLfloat GLdouble;
+
 
 #else
 #include "SDL_opengl.h"

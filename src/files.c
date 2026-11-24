@@ -57,7 +57,7 @@ static char *FixFilename(const char *filename, const char *prefix, int force)
 	strcat(f, filename);
 	
 	/* only the filename part needs to be modified */
-	ptr = &f[plen+1];
+	ptr = &f[plen];
 	
 	while (*ptr) {
 		if ((*ptr == '/') || (*ptr == '\\') || (*ptr == ':')) {

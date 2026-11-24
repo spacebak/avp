@@ -2,7 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "SDL.h"
+#include "menu_surface.h"
 
 #include "fixer.h"
 
@@ -132,7 +132,7 @@ static void DrawAvPMenuGlowyBar(int topleftX, int topleftY, int alpha, int lengt
 	}
 	if (length<0) length = 0;
 	
-	if (SDL_MUSTLOCK(surface)) {
+	if (AVP_MENU_MUSTLOCK(surface)) {
 		if (SDL_LockSurface(surface) < 0) {
 			return; /* ... */
 		}
@@ -186,7 +186,7 @@ static void DrawAvPMenuGlowyBar(int topleftX, int topleftY, int alpha, int lengt
 		}
 	}
 		
-	if (SDL_MUSTLOCK(surface)) {
+	if (AVP_MENU_MUSTLOCK(surface)) {
 		SDL_UnlockSurface(surface);
 	}
 }
@@ -205,7 +205,7 @@ static void DrawAvPMenuGlowyBar_Clipped(int topleftX, int topleftY, int alpha, i
 	
 	if (length<0) length = 0;
 	
-	if (SDL_MUSTLOCK(surface)) {
+	if (AVP_MENU_MUSTLOCK(surface)) {
 		if (SDL_LockSurface(surface) < 0) {
 			return; /* ... */
 		}
@@ -261,7 +261,7 @@ static void DrawAvPMenuGlowyBar_Clipped(int topleftX, int topleftY, int alpha, i
 		}
 	}
 		
-	if (SDL_MUSTLOCK(surface)) {
+	if (AVP_MENU_MUSTLOCK(surface)) {
 		SDL_UnlockSurface(surface);
 	}
 }
@@ -432,7 +432,7 @@ int RenderMenuText(const char *textPtr, int sx, int sy, int alpha, enum AVPMENUF
 	gfxPtr = &IntroFont_Light.info;
 	image = gfxPtr->ImagePtr;
 	
-	if (SDL_MUSTLOCK(surface)) {
+	if (AVP_MENU_MUSTLOCK(surface)) {
 		if (SDL_LockSurface(surface) < 0) {
 			return 0; /* ... */
 		}
@@ -491,7 +491,7 @@ int RenderMenuText(const char *textPtr, int sx, int sy, int alpha, enum AVPMENUF
 		}
 	}
 
-	if (SDL_MUSTLOCK(surface)) {
+	if (AVP_MENU_MUSTLOCK(surface)) {
 		SDL_UnlockSurface(surface);
 	}
 	
@@ -537,7 +537,7 @@ int RenderMenuText_Clipped(char *textPtr, int sx, int sy, int alpha, enum AVPMEN
 	gfxPtr = &IntroFont_Light.info;
 	image = gfxPtr->ImagePtr;
 	
-	if (SDL_MUSTLOCK(surface)) {
+	if (AVP_MENU_MUSTLOCK(surface)) {
 		if (SDL_LockSurface(surface) < 0) {
 			return 0; /* ... */
 		}
@@ -600,7 +600,7 @@ int RenderMenuText_Clipped(char *textPtr, int sx, int sy, int alpha, enum AVPMEN
 		}
 	}
 
-	if (SDL_MUSTLOCK(surface)) {
+	if (AVP_MENU_MUSTLOCK(surface)) {
 		SDL_UnlockSurface(surface);
 	}
 	
@@ -622,7 +622,7 @@ static int RenderSmallFontString(char *textPtr,int sx,int sy,int alpha, int red,
 	gfxPtr = &AvPMenuGfxStorage[AVPMENUGFX_SMALL_FONT];
 	image = gfxPtr->ImagePtr;
 	
-	if (SDL_MUSTLOCK(surface)) {
+	if (AVP_MENU_MUSTLOCK(surface)) {
 		if (SDL_LockSurface(surface) < 0) {
 			return 0; /* ... */
 		}
@@ -669,7 +669,7 @@ static int RenderSmallFontString(char *textPtr,int sx,int sy,int alpha, int red,
 		}
 	}
 
-	if (SDL_MUSTLOCK(surface)) {
+	if (AVP_MENU_MUSTLOCK(surface)) {
 		SDL_UnlockSurface(surface);
 	}
 	
@@ -751,7 +751,7 @@ Determine area used by text , so we can draw it centrally
 	}
 }
 
-	if (SDL_MUSTLOCK(surface)) {
+	if (AVP_MENU_MUSTLOCK(surface)) {
 		if (SDL_LockSurface(surface) < 0) {
 			return; /* ... */
 		}
@@ -852,7 +852,7 @@ Determine area used by text , so we can draw it centrally
 		}
 	}
 	
-	if (SDL_MUSTLOCK(surface)) {
+	if (AVP_MENU_MUSTLOCK(surface)) {
 		SDL_UnlockSurface(surface);
 	}
 	
@@ -990,7 +990,7 @@ void RenderKeyConfigRectangle(int alpha)
 		((MUL_FIXED(0xFF,alpha)>>2)<<5 ) |
 		((MUL_FIXED(0xFF,alpha)>>3));
 	
-	if (SDL_MUSTLOCK(surface)) {
+	if (AVP_MENU_MUSTLOCK(surface)) {
 		if (SDL_LockSurface(surface) < 0) {
 			return; /* ... */
 		}
@@ -1020,7 +1020,7 @@ void RenderKeyConfigRectangle(int alpha)
 		*destPtr |= c;
 	}
 	
-	if (SDL_MUSTLOCK(surface)) {
+	if (AVP_MENU_MUSTLOCK(surface)) {
 		SDL_UnlockSurface(surface);
 	}
 }
@@ -1034,7 +1034,7 @@ void RenderHighlightRectangle(int x1, int y1, int x2, int y2, int r, int g, int 
 		((g>>2)<<5 ) |
 		((b>>3));
 
-	if (SDL_MUSTLOCK(surface)) {
+	if (AVP_MENU_MUSTLOCK(surface)) {
 		if (SDL_LockSurface(surface) < 0) {
 			return; /* ... */
 		}
@@ -1050,7 +1050,7 @@ void RenderHighlightRectangle(int x1, int y1, int x2, int y2, int r, int g, int 
 		}
 	}
 	
-	if (SDL_MUSTLOCK(surface)) {
+	if (AVP_MENU_MUSTLOCK(surface)) {
 		SDL_UnlockSurface(surface);
 	}
 }
@@ -1191,7 +1191,7 @@ void DrawAvpMenuBink(unsigned char* buf, int width, int height, int pitch)
 	if (length <= 0) return;
 	
 
-	if (SDL_MUSTLOCK(surface)) {
+	if (AVP_MENU_MUSTLOCK(surface)) {
 		if (SDL_LockSurface(surface) < 0) {
 			return;
 		}
@@ -1214,7 +1214,7 @@ void DrawAvpMenuBink(unsigned char* buf, int width, int height, int pitch)
 		dstPtr += dstPitch;
 	}
 	
-	if (SDL_MUSTLOCK(surface)) {
+	if (AVP_MENU_MUSTLOCK(surface)) {
 		SDL_UnlockSurface(surface);
 	}
 }
@@ -1254,7 +1254,7 @@ void DrawAvPMenuGfx(enum AVPMENUGFX_ID menuGfxID, int topleftX, int topleftY, in
 	}
 	if (length <= 0) return;
 			
-	if (SDL_MUSTLOCK(surface)) {
+	if (AVP_MENU_MUSTLOCK(surface)) {
 		if (SDL_LockSurface(surface) < 0) {
 			return; /* ... */
 		}
@@ -1310,7 +1310,7 @@ void DrawAvPMenuGfx(enum AVPMENUGFX_ID menuGfxID, int topleftX, int topleftY, in
 		}
 	}
 		
-	if (SDL_MUSTLOCK(surface)) {
+	if (AVP_MENU_MUSTLOCK(surface)) {
 		SDL_UnlockSurface(surface);
 	}
 }
@@ -1334,7 +1334,7 @@ void DrawAvPMenuGfx_CrossFade(enum AVPMENUGFX_ID menuGfxID,enum AVPMENUGFX_ID me
 	srcPtr = image->buf;
 	srcPtr2 = image2->buf;
 	
-	if (SDL_MUSTLOCK(surface)) {
+	if (AVP_MENU_MUSTLOCK(surface)) {
 		if (SDL_LockSurface(surface) < 0) {
 			return; /* ... */
 		}
@@ -1389,7 +1389,7 @@ void DrawAvPMenuGfx_CrossFade(enum AVPMENUGFX_ID menuGfxID,enum AVPMENUGFX_ID me
 		}
 	}
 	
-	if (SDL_MUSTLOCK(surface)) {
+	if (AVP_MENU_MUSTLOCK(surface)) {
 		SDL_UnlockSurface(surface);
 	}
 	
@@ -1430,7 +1430,7 @@ void DrawAvPMenuGfx_Faded(enum AVPMENUGFX_ID menuGfxID, int topleftX, int toplef
 	}
 	if (length <= 0) return;
 			
-	if (SDL_MUSTLOCK(surface)) {
+	if (AVP_MENU_MUSTLOCK(surface)) {
 		if (SDL_LockSurface(surface) < 0) {
 			return; /* ... */
 		}
@@ -1462,7 +1462,7 @@ void DrawAvPMenuGfx_Faded(enum AVPMENUGFX_ID menuGfxID, int topleftX, int toplef
 		}
 	}
 		
-	if (SDL_MUSTLOCK(surface)) {
+	if (AVP_MENU_MUSTLOCK(surface)) {
 		SDL_UnlockSurface(surface);
 	}
 }
@@ -1502,7 +1502,7 @@ void DrawAvPMenuGfx_Clipped(enum AVPMENUGFX_ID menuGfxID, int topleftX, int topl
 	}
 	if (length <= 0) return;
 			
-	if (SDL_MUSTLOCK(surface)) {
+	if (AVP_MENU_MUSTLOCK(surface)) {
 		if (SDL_LockSurface(surface) < 0) {
 			return; /* ... */
 		}
@@ -1563,7 +1563,7 @@ void DrawAvPMenuGfx_Clipped(enum AVPMENUGFX_ID menuGfxID, int topleftX, int topl
 		}
 	}
 		
-	if (SDL_MUSTLOCK(surface)) {
+	if (AVP_MENU_MUSTLOCK(surface)) {
 		SDL_UnlockSurface(surface);
 	}
 }
@@ -1578,7 +1578,7 @@ void FadedScreen(int alpha)
 	int x, y;
 	unsigned short *ptr;
 	
-	if (SDL_MUSTLOCK(surface)) {
+	if (AVP_MENU_MUSTLOCK(surface)) {
 		if (SDL_LockSurface(surface) < 0) {
 			return; /* ... */
 		}
@@ -1603,7 +1603,7 @@ void FadedScreen(int alpha)
 		}
 	}
 	
-	if (SDL_MUSTLOCK(surface)) {
+	if (AVP_MENU_MUSTLOCK(surface)) {
 		SDL_UnlockSurface(surface);
 	}
 }
@@ -1613,7 +1613,7 @@ void ClearScreenToBlack()
 	int x, y;
 	unsigned short *ptr;
 	
-	if (SDL_MUSTLOCK(surface)) {
+	if (AVP_MENU_MUSTLOCK(surface)) {
 		if (SDL_LockSurface(surface) < 0) {
 			return; /* ... */
 		}
@@ -1628,7 +1628,7 @@ void ClearScreenToBlack()
 		}
 	}
 	
-	if (SDL_MUSTLOCK(surface)) {
+	if (AVP_MENU_MUSTLOCK(surface)) {
 		SDL_UnlockSurface(surface);
 	}
 }

@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Aliens versus Predator Classic</title>
+<style>
+  html, body { margin: 0; height: 100%; background: #080909; color: #ddd; font: 16px system-ui; }
+  body { display: grid; align-content: center; justify-items: center; gap: .5rem; }
+  canvas { display: block; width: min(100vw, calc((100vh - 3rem) * 4 / 3)); height: auto; outline: none; }
+  p { margin: 0; }
+</style>
+<canvas id="canvas" width="640" height="480" tabindex="0" aria-label="Aliens versus Predator game"></canvas>
+<p id="status" role="status">Loading game data…</p>
+<script>
+  const canvas = document.getElementById('canvas');
+  const statusLine = document.getElementById('status');
+  var Module = {
+    canvas,
+    arguments: ['--windowed', '--nocdrom'],
+    preRun: [() => { ENV.AVP_DATA = '/avp'; }],
+    onRuntimeInitialized() {
+      canvas.focus();
+      statusLine.textContent = 'Click to capture the mouse · Esc to release';
+    },
+    onAbort(reason) { statusLine.textContent = 'Game stopped: ' + reason; }
+  };
+  function releaseMouse() {
+    Module.avpCursorLook = false;
+    statusLine.textContent = 'Click the game to use mouse look';
+  }
+  function cursorLook() {
+    if (document.activeElement !== canvas || document.hidden) return;
+    Module.avpCursorLook = true;
+    statusLine.textContent = 'Move the pointer over the game to look around · Esc to release';
+  }
+  canvas.addEventListener('click', () => {
+    canvas.focus();
+    if (document.pointerLockElement === canvas) return;
+    if (!canvas.requestPointerLock) { cursorLook(); return; }
+    try {
+      const request = canvas.requestPointerLock();
+      if (request) request.catch(cursorLook);
+    } catch (_) { cursorLook(); }
+  });
+  document.addEventListener('pointerlockerror', cursorLook);
+  document.addEventListener('pointerlockchange', () => {
+    releaseMouse();
+    if (document.pointerLockElement === canvas) statusLine.textContent = 'Mouse captured · Esc to release';
+  });
+  window.addEventListener('blur', releaseMouse);
+  window.addEventListener('keydown', event => {
+    if (event.key === 'Escape' && Module.avpCursorLook) releaseMouse();
+  });
+  canvas.addEventListener('contextmenu', event => event.preventDefault());
+</script>
+<script src="assets.js"></script>
+<script src="avp.js"></script>
+</html>
+
