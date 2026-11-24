@@ -10,7 +10,7 @@ With Node.js 22 or newer, start the relay from the repository root.
 node web-multiplayer/relay.js
 ```
 
-The default endpoint is `ws://localhost:8080/avp`. Open two instances of the web game. In **Multiplayer**, choose **Host New Game** in one, select a mode and level, and start the session. In the other, choose **Join Existing Game**, select the room, then choose a species and enter the match. The host must keep the game running while the guest joins. Skirmish runs offline.
+On HTTP the browser uses port 8080 on the game page hostname. On HTTPS it uses the same origin and the path `/avp`. Open two instances of the web game. In **Multiplayer**, choose **Host New Game** in one, select a mode and level, and start the session. In the other, choose **Join Existing Game**, select the room, then choose a species and enter the match. The host must keep the game running while the guest joins. Skirmish runs offline.
 
 For a shared deployment, point all clients at the same relay. Configure `AVP_WEB_MULTIPLAYER_URL` when building, for example with `-DAVP_WEB_MULTIPLAYER_URL=wss://games.example.org/avp`. Forward WebSocket upgrade requests for `/avp` from the HTTPS server to the relay. The relay binds to `127.0.0.1` by default. Its `HOST` and `PORT` environment variables select the listening address. Rooms are visible to everyone connected to that relay, and the legacy gameplay decoder assumes trusted peers.
 
@@ -26,7 +26,7 @@ $sdk = "E:/Unity/6000.4.10f1/Editor/Data/PlaybackEngines/WebGLSupport/BuildTools
 .\launch-web.ps1
 ```
 
-The launcher starts both the game server and the relay on loopback and opens the default browser. To launch a previously compiled game, run `.\launch-web.ps1` alone. Select **New Profile** with Enter. Use arrow keys and Enter in the menus. Click the canvas for mouse capture and press Esc to release it. In this build, profiles and saves last for the current page session.
+The launcher opens the game in the default browser. For two computers on the same router, run `.\launch-web.ps1 -ListenAddress 192.168.1.136`, substituting the IPv4 address of the host computer. Both players can open the printed URL. The LAN relay forwards to the local relay, so a host playing on localhost shares the same room list. The game uses TCP 8788 for files and TCP 8080 for multiplayer. To launch a previously compiled game, run `.\launch-web.ps1` alone. Select **New Profile** with Enter. Use arrow keys and Enter in the menus. Click the canvas for mouse look and press Esc to release it. If the browser declines pointer capture, moving the pointer within the canvas still turns the view. In this build, profiles and saves last for the current page session.
 
 The standalone builder also accepts a different Steam directory and a path to `emcc.py`. Both players need the same game data. For custom maps the room list matches level names against the local installation.
 

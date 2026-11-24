@@ -1,6 +1,7 @@
 'use strict';
 
 const http = require('http');
+const net = require('node:net');
 const crypto = require('crypto');
 
 const PORT = Number(process.env.PORT || 8080);
@@ -259,6 +260,16 @@ function handleMessage(client, opcode, data) {
   }
 }
 
-server.listen(PORT, process.env.HOST || '127.0.0.1', () => {
-  process.stdout.write(`AVP WebSocket relay listening on :${server.address().port}\n`);
+// The LAN listener forwards to the same rooms used by localhost tabs.
+// Piping the TCP stream preserves the existing WebSocket upgrade and framing.
+const listener = process.argv[3] === '--forward-local' ? net.createServer(client => {
+  const upstream = net.connect(PORT, '127.0.0.1');
+  upstream.on('error', () => client.destroy());
+  client.on('error', () => upstream.destroy());
+  upstream.on('close', () => client.destroy());
+  client.on('close', () => upstream.destroy());
+  client.pipe(upstream).pipe(client);
+}) : server;
+listener.listen(PORT, process.argv[2] || process.env.HOST || '127.0.0.1', () => {
+  process.stdout.write(`AVP WebSocket relay listening on :${listener.address().port}\n`);
 });

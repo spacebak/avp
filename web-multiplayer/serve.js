@@ -4,6 +4,7 @@ const http = require('node:http');
 const fs = require('node:fs');
 const path = require('node:path');
 const build = path.resolve(__dirname, '../build-web');
+const address = process.argv[2] || '127.0.0.1';
 const files = new Map([
   ['/', ['index.html', 'text/html; charset=utf-8']],
   ['/index.html', ['index.html', 'text/html; charset=utf-8']],
@@ -33,4 +34,4 @@ http.createServer((req, res) => {
       stream.pipe(res);
     }
   });
-}).listen(8788, '127.0.0.1', () => console.log('AvP is ready at http://127.0.0.1:8788/'));
+}).listen(8788, address, () => console.log(`AvP is ready at http://${address}:8788/`));
